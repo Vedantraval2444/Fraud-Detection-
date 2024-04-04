@@ -1,0 +1,171 @@
+#Load Libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from xgboost import XGBClassifier
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+
+# Load the dataset
+url = "https://storage.googleapis.com/download.tensorflow.org/data/creditcard.csv"
+df = pd.read_csv(url)
+
+# Statistical Analysis
+print("Statistical Analysis:")
+print("Minimum values:")
+print(df.min())
+print("\nMedian values:")
+print(df.median())
+print("\nMode values:")
+print(df.mode())
+print("\nQuartiles:")
+print(df.quantile([0.25, 0.5, 0.75]))
+
+# Explore the dataset
+print("\n\nExploring the dataset:")
+print(df.head())
+print(df.info())
+
+# Check for missing values
+print("\n\nMissing Values Check:")
+print(df.isnull().sum())
+
+# Class Distribution Visualization
+class_counts = df['Class'].value_counts()
+labels = ['Non-Fraudulent', 'Fraudulent']
+colors = ['#ff9999','#66b3ff']
+
+# Data Visulize by pie chart
+plt.figure(figsize=(6, 6))
+plt.pie(class_counts, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
+plt.title('Class Distribution')
+plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+plt.show()
+
+# Heat map
+# Calculate correlation matrix
+correlation_matrix = df.corr()
+
+# Plot heatmap
+plt.figure(figsize=(12, 10))
+sns.heatmap(correlation_matrix, annot=True, cmap='PuOr', fmt=".2f", linewidths=0.5)
+plt.title('Correlation Heatmap')
+plt.show()
+
+# Plot histograms for each feature
+plt.figure(figsize=(15, 20))
+for i, column in enumerate(df.columns[:-1]):  # Exclude the 'Class' column
+    plt.subplot(8, 4, i + 1)
+    sns.histplot(df[column], kde=True, color='blue', bins=50)
+    plt.title(column)
+    plt.xlabel('')
+plt.tight_layout()
+plt.show()
+
+# Check class distribution
+print("\n\nClass Distribution:")
+print(df['Class'].value_counts())
+
+# Split the dataset into train and test sets
+X = df.drop('Class', axis=1)
+y = df['Class']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train Random Forest classifier
+rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_classifier.fit(X_train, y_train)
+rf_pred = rf_classifier.predict(X_test)
+
+from sklearn.preprocessing import StandardScaler
+
+# Scale the data
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Train Logistic Regression classifier with increased max_iter
+lr_classifier = LogisticRegression(max_iter=1000)  # Increase max_iter
+lr_classifier.fit(X_train_scaled, y_train)
+lr_pred = lr_classifier.predict(X_test_scaled)
+
+# Train Support Vector Machine classifier
+svm_classifier = SVC()
+svm_classifier.fit(X_train, y_train)
+svm_pred = svm_classifier.predict(X_test)
+
+# Train XGBoost classifier
+xgb_classifier = XGBClassifier()
+xgb_classifier.fit(X_train, y_train)
+xgb_pred = xgb_classifier.predict(X_test)
+
+# Model Accuracy Graphs
+def plot_scatter(y_test, y_pred, name):
+    plt.figure(figsize=(8, 6))
+    plt.scatter(y_test, y_pred, s=10, color='#9B673C')
+    plt.xlabel('Actual Values')
+    plt.ylabel('Predicted Values')
+    plt.title(f'{name} Evaluation')
+    plt.plot([min(y_test), max(y_test)], [min(y_test), max(y_test)], color='green', linewidth=4)
+    plt.show()
+
+# Confusion matrix for Random Forest
+plt.figure(figsize=(8, 6))
+sns.heatmap(confusion_matrix(y_test, rf_pred), annot=True, cmap='Blues', fmt='d')
+plt.title('Random Forest Confusion Matrix')
+plt.xlabel('Predicted Labels')
+plt.ylabel('True Labels')
+plt.show()
+
+# Confusion matrix for Logistic Regression
+plt.figure(figsize=(8, 6))
+sns.heatmap(confusion_matrix(y_test, lr_pred), annot=True, cmap='Blues', fmt='d')
+plt.title('Logistic Regression Confusion Matrix')
+plt.xlabel('Predicted Labels')
+plt.ylabel('True Labels')
+plt.show()
+
+# Confusion matrix for Support Vector Machine
+plt.figure(figsize=(8, 6))
+sns.heatmap(confusion_matrix(y_test, svm_pred), annot=True, cmap='Blues', fmt='d')
+plt.title('Support Vector Machine Confusion Matrix')
+plt.xlabel('Predicted Labels')
+plt.ylabel('True Labels')
+plt.show()
+
+# Confusion matrix for XGBoost
+plt.figure(figsize=(8, 6))
+sns.heatmap(confusion_matrix(y_test, xgb_pred), annot=True, cmap='Blues', fmt='d')
+plt.title('XGBoost Confusion Matrix')
+plt.xlabel('Predicted Labels')
+plt.ylabel('True Labels')
+plt.show()
+
+# Classification report for Random Forest
+print("Random Forest Classification Report:")
+print(classification_report(y_test, rf_pred))
+
+# Classification report for Logistic Regression
+print("Logistic Regression Classification Report:")
+print(classification_report(y_test, lr_pred))
+
+# Classification report for Support Vector Machine
+print("Support Vector Machine Classification Report:")
+print(classification_report(y_test, svm_pred))
+
+# Classification report for XGBoost
+print("XGBoost Classification Report:")
+print(classification_report(y_test, xgb_pred))
+
+# Evaluate the models
+classifiers = ['Random Forest', 'Logistic Regression', 'Support Vector Machine', 'XGBoost']
+predictions = [rf_pred, lr_pred, svm_pred, xgb_pred]
+
+for clf, pred in zip(classifiers, predictions):
+    print("\n\nEvaluating {}:".format(clf))
+    print("Accuracy Score:", accuracy_score(y_test, pred))
+    print("Confusion Matrix:\n", confusion_matrix(y_test, pred))
+    print("Classification Report:\n", classification_report(y_test, pred))
